@@ -1,0 +1,13 @@
+module "vpc" {
+  source = "../../modules/vpc"
+
+  environment               = var.environment
+  vpc_cidr                  = var.vpc_cidr
+  public_subnet_cidrs       = var.public_subnet_cidrs
+  private_subnet_cidrs      = var.private_subnet_cidrs
+  enable_single_nat_gateway = var.enable_single_nat_gateway
+
+  tags = {
+    Owner = "DevOps-Team"
+  }
+}
