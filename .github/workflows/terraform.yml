@@ -1,4 +1,4 @@
-name: "Terraform CI/CD Pipeline"
+name: "Terraform CI/CD & DevSecOps Pipeline"
 
 on:
   push:
@@ -14,7 +14,7 @@ permissions:
 
 jobs:
   terraform:
-    name: "Terraform Integration & Deployment"
+    name: "Terraform Integration & Security Scan"
     runs-on: ubuntu-latest
 
     defaults:
@@ -48,6 +48,13 @@ jobs:
       - name: Terraform Validate
         id: validate
         run: terraform validate -no-color
+
+      # --- DevSecOps Security Scan Step ---
+      - name: Run tfsec Security Scan
+        uses: aquasecurity/tfsec-action@v1.0.3
+        with:
+          working_directory: environments/dev
+          soft_fail: true
 
       - name: Terraform Plan
         id: plan
