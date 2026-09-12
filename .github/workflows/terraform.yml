@@ -1,4 +1,4 @@
-name: "Terraform CI/CD & DevSecOps Pipeline"
+name: "Terraform DevSecOps & Plan-Only CI/CD Pipeline"
 
 on:
   push:
@@ -14,7 +14,7 @@ permissions:
 
 jobs:
   terraform:
-    name: "Terraform Integration & Security Scan"
+    name: "Validate, Scan & Plan Infrastructure"
     runs-on: ubuntu-latest
 
     defaults:
@@ -49,7 +49,6 @@ jobs:
         id: validate
         run: terraform validate -no-color
 
-      # --- DevSecOps Security Scan Step ---
       - name: Run tfsec Security Scan
         uses: aquasecurity/tfsec-action@v1.0.3
         with:
@@ -58,10 +57,4 @@ jobs:
 
       - name: Terraform Plan
         id: plan
-        if: github.event_name == 'pull_request'
         run: terraform plan -no-color -input=false
-        continue-on-error: true
-
-      - name: Terraform Apply
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-        run: terraform apply -auto-approve -input=false
