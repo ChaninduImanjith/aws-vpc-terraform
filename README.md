@@ -1,13 +1,14 @@
-# Production-Ready AWS VPC Infrastructure with Terraform & GitHub Actions CI/CD
+# Production-Ready AWS VPC Infrastructure with Terraform, DevSecOps & GitHub Actions CI/CD
 
 [![Terraform CI/CD Pipeline](https://github.com/ChaninduImanjith/aws-vpc-terraform/actions/workflows/terraform.yml/badge.svg)](https://github.com/ChaninduImanjith/aws-vpc-terraform/actions/workflows/terraform.yml)
 [![Terraform](https://img.shields.io/badge/Terraform-%3E%3D1.5.0-623CE4?logo=terraform&logoColor=white)](https://www.terraform.io/)
 [![AWS](https://img.shields.io/badge/AWS-VPC-FF9900?logo=amazonaws&logoColor=white)](https://aws.amazon.com/vpc/)
+[![Security: tfsec](https://img.shields.io/badge/Security-tfsec-blueviolet?logo=aquasecurity&logoColor=white)](https://github.com/aquasecurity/tfsec)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 A production-grade, highly available, and cost-optimized **AWS Virtual Private Cloud (VPC)** infrastructure built with **Terraform** and automated using **GitHub Actions CI/CD**.
 
-This repository demonstrates Infrastructure as Code (IaC) and GitOps best practices, including:
+This repository demonstrates **Infrastructure as Code (IaC)**, **GitOps**, and **DevSecOps** best practices, including:
 
 - Dynamic multi-AZ subnet provisioning
 - Public and private subnet separation
@@ -16,6 +17,7 @@ This repository demonstrates Infrastructure as Code (IaC) and GitOps best practi
 - AWS EKS-ready subnet tagging
 - Remote Terraform state using Amazon S3
 - Terraform state locking using DynamoDB
+- Static Terraform security scanning using `tfsec`
 - Automated validation, planning, and deployment using GitHub Actions
 - Reusable Terraform module architecture
 
@@ -39,6 +41,8 @@ The infrastructure provisions an isolated AWS network across multiple Availabili
 | **Private Egress** | NAT Gateway |
 | **Remote State** | Amazon S3 |
 | **State Locking** | Amazon DynamoDB |
+| **Security Scanning** | tfsec |
+| **CI/CD** | GitHub Actions |
 
 ### Public Subnets
 
@@ -52,18 +56,18 @@ Public subnets are connected to an **Internet Gateway (IGW)** and can host inter
 
 Private subnets do not receive direct inbound internet access.
 
-Outbound internet access is routed through a **NAT Gateway**, allowing private resources to securely access services such as package repositories and external APIs.
+Outbound internet access is routed through a **NAT Gateway**, allowing private resources to securely access package repositories, APIs, and external services.
 
 ### High Availability & Cost Optimization
 
 The module supports configurable NAT Gateway deployment strategies:
 
-- **Single NAT Gateway** for development environments to reduce cost.
+- **Single NAT Gateway** for development environments to reduce infrastructure cost.
 - **One NAT Gateway per Availability Zone** for production environments requiring higher availability.
 
 ### Kubernetes / EKS Integration
 
-Public and private subnets include standard AWS EKS tags:
+Public and private subnets include standard AWS EKS subnet tags:
 
 ```text
 kubernetes.io/role/elb
@@ -71,6 +75,12 @@ kubernetes.io/role/internal-elb
 ```
 
 These tags allow AWS Load Balancer integrations to automatically identify the appropriate subnets.
+
+### DevSecOps Security Integration
+
+Terraform code is statically analyzed using **tfsec** before infrastructure changes are deployed.
+
+The security scan is integrated directly into the GitHub Actions CI/CD pipeline to identify insecure infrastructure configurations early in the development lifecycle.
 
 ---
 
@@ -110,9 +120,7 @@ These tags allow AWS Load Balancer integrations to automatically identify the ap
 
 ---
 
-## GitOps CI/CD Pipeline Architecture
-
-GitHub Actions automatically validates Terraform changes and deploys infrastructure after changes are merged into the `main` branch.
+## DevSecOps CI/CD Pipeline Architecture
 
 ```text
 Developer
@@ -124,19 +132,20 @@ GitHub Repository
     ▼
 GitHub Actions Runner
     │
-    ├────────────────────────────┐
-    │                            │
-    ▼                            ▼
+    ├─────────────────────────────┐
+    │                             │
+    ▼                             ▼
 Pull Request                  Push / Merge to main
-    │                            │
-    ├─ terraform fmt             ├─ terraform fmt
-    ├─ terraform init            ├─ terraform init
-    ├─ terraform validate        ├─ terraform validate
-    └─ terraform plan            ├─ terraform plan
-                                 └─ terraform apply
-                                        │
-                                        ▼
-                                   AWS Infrastructure
+    │                             │
+    ├─ terraform fmt              ├─ terraform fmt
+    ├─ terraform init             ├─ terraform init
+    ├─ terraform validate         ├─ terraform validate
+    ├─ tfsec security scan        ├─ tfsec security scan
+    └─ terraform plan             ├─ terraform plan
+                                  └─ terraform apply
+                                         │
+                                         ▼
+                                  AWS Infrastructure
 ```
 
 ### Pull Request Workflow
@@ -147,10 +156,16 @@ When a Pull Request is opened or updated, GitHub Actions automatically executes:
 terraform fmt -check -recursive
 terraform init
 terraform validate
+tfsec .
 terraform plan
 ```
 
-This ensures infrastructure changes are formatted, valid, and reviewable before deployment.
+This ensures that infrastructure changes are:
+
+- Properly formatted
+- Syntactically valid
+- Security scanned
+- Reviewable before deployment
 
 ### Main Branch Deployment Workflow
 
@@ -159,6 +174,7 @@ After a Pull Request is approved and merged into `main`, GitHub Actions executes
 ```bash
 terraform init
 terraform validate
+tfsec .
 terraform plan
 terraform apply -auto-approve
 ```
@@ -271,7 +287,7 @@ aws-vpc-terraform/
 
 **`.github/workflows/`**
 
-Contains the GitHub Actions workflow responsible for Terraform validation, planning, and deployment.
+Contains the GitHub Actions workflow responsible for Terraform validation, security scanning, planning, and deployment.
 
 **`modules/vpc/`**
 
@@ -296,6 +312,7 @@ Before using this project, install and configure:
 - [Terraform](https://developer.hashicorp.com/terraform/install) `>= 1.5.0`
 - [AWS CLI v2](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)
 - Git
+- `tfsec`
 - An AWS account with permissions to create networking resources
 - An Amazon S3 bucket for Terraform remote state
 - A DynamoDB table for Terraform state locking
@@ -354,7 +371,7 @@ GitHub Repository
 
 Add the required AWS credentials.
 
-> For production environments, using GitHub Actions with AWS IAM OpenID Connect (OIDC) is preferred over long-lived AWS access keys.
+> For production environments, GitHub Actions with AWS IAM OpenID Connect (OIDC) is preferred over long-lived AWS access keys.
 
 ---
 
@@ -367,25 +384,17 @@ git clone https://github.com/ChaninduImanjith/aws-vpc-terraform.git
 cd aws-vpc-terraform
 ```
 
----
-
 ### 2. Navigate to the Development Environment
 
 ```bash
 cd environments/dev
 ```
 
----
-
 ### 3. Initialize Terraform
-
-Initialize the backend, provider plugins, and reusable modules:
 
 ```bash
 terraform init
 ```
-
----
 
 ### 4. Format Terraform Code
 
@@ -399,17 +408,19 @@ Check formatting without modifying files:
 terraform fmt -check -recursive
 ```
 
----
-
 ### 5. Validate Configuration
 
 ```bash
 terraform validate
 ```
 
----
+### 6. Run Security Scan
 
-### 6. Preview Infrastructure Changes
+```bash
+tfsec .
+```
+
+### 7. Preview Infrastructure Changes
 
 ```bash
 terraform plan
@@ -417,11 +428,7 @@ terraform plan
 
 Review all proposed changes before applying them.
 
----
-
-### 7. Apply Configuration Locally
-
-If manual deployment is required:
+### 8. Apply Configuration Locally
 
 ```bash
 terraform apply
@@ -433,7 +440,7 @@ Or:
 terraform apply -auto-approve
 ```
 
-For normal GitOps workflows, deployment should instead occur through GitHub Actions after merging changes into `main`.
+For normal GitOps workflows, deployment should occur through GitHub Actions after merging changes into `main`.
 
 ---
 
@@ -445,29 +452,18 @@ For normal GitOps workflows, deployment should instead occur through GitHub Acti
 git checkout -b feature/network-update
 ```
 
----
-
 ### 2. Make Infrastructure Changes
 
 Modify the required Terraform configuration.
 
-For example:
-
-```bash
-vim terraform.tfvars
-```
-
----
-
-### 3. Format and Validate Locally
+### 3. Format, Validate & Scan Locally
 
 ```bash
 terraform fmt -recursive
 terraform validate
+tfsec .
 terraform plan
 ```
-
----
 
 ### 4. Commit the Changes
 
@@ -476,15 +472,11 @@ git add .
 git commit -m "Update network configuration"
 ```
 
----
-
 ### 5. Push the Feature Branch
 
 ```bash
 git push origin feature/network-update
 ```
-
----
 
 ### 6. Open a Pull Request
 
@@ -502,16 +494,22 @@ GitHub Actions will automatically run:
 terraform fmt
 terraform init
 terraform validate
+tfsec security scan
 terraform plan
 ```
 
----
-
 ### 7. Merge the Pull Request
 
-After reviewing the Terraform execution plan, merge the Pull Request.
+After reviewing:
 
-The GitHub Actions deployment workflow will then execute Terraform against AWS.
+- Terraform code
+- tfsec security results
+- Terraform execution plan
+- GitHub Actions status
+
+merge the Pull Request.
+
+The deployment workflow will then execute Terraform against AWS.
 
 ---
 
@@ -596,11 +594,38 @@ private_subnet_ids = [
 - Environment-specific Terraform configuration
 - Amazon S3 remote Terraform state
 - DynamoDB Terraform state locking
+- Static Terraform security scanning using `tfsec`
+- DevSecOps security checks inside CI/CD
 - GitHub Actions CI/CD automation
 - Pull Request Terraform validation
 - Automated Terraform planning
 - Automated infrastructure deployment
 - GitOps-style infrastructure workflow
+
+---
+
+## DevSecOps Security Scanning
+
+Security validation is integrated directly into the infrastructure delivery workflow using **tfsec**.
+
+`tfsec` performs static analysis on Terraform configuration and can detect issues such as:
+
+- Publicly exposed infrastructure
+- Overly permissive network rules
+- Missing encryption
+- Insecure AWS service configurations
+- Weak security defaults
+- Misconfigured cloud resources
+
+Run the scan locally:
+
+```bash
+tfsec .
+```
+
+The same security scan also runs automatically inside GitHub Actions.
+
+If the security scan fails, the CI/CD workflow can stop before insecure infrastructure changes are deployed.
 
 ---
 
@@ -610,7 +635,7 @@ private_subnet_ids = [
 
 Private subnets do not expose resources directly to the public internet.
 
-Outbound traffic follows the path:
+Outbound traffic follows:
 
 ```text
 Private Resource
@@ -657,7 +682,7 @@ For production environments, prefer short-lived AWS credentials through **GitHub
 
 ### NAT Gateway Availability
 
-A single NAT Gateway reduces development cost but introduces a potential availability dependency.
+A single NAT Gateway reduces development cost but introduces an availability dependency.
 
 For production workloads, deploying one NAT Gateway per Availability Zone provides better fault isolation.
 
@@ -671,6 +696,7 @@ Recommended local development workflow:
 terraform fmt -recursive
 terraform init
 terraform validate
+tfsec .
 terraform plan
 ```
 
@@ -686,7 +712,16 @@ Feature Branch
 Pull Request
    │
    ▼
-Terraform Validation + Plan
+Terraform Formatting
+   │
+   ▼
+Terraform Validation
+   │
+   ▼
+tfsec Security Scan
+   │
+   ▼
+Terraform Plan
    │
    ▼
 Code Review
@@ -731,16 +766,18 @@ Potential improvements for production environments include:
 - GitHub Actions authentication using AWS OIDC
 - Separate `dev`, `staging`, and `prod` environments
 - GitHub Environment approval gates for production
-- Terraform security scanning with Checkov or tfsec
-- Terraform linting using TFLint
+- TFLint integration
+- Checkov security scanning
 - Amazon VPC Flow Logs
 - VPC Endpoints for private AWS service access
+- AWS KMS encryption for remote state
 - Network ACL customization
 - AWS Transit Gateway integration
 - Automated Terraform documentation
 - Automated semantic versioning
 - Infrastructure testing
 - Cost estimation during Pull Requests
+- Automated security reporting
 
 ---
 
