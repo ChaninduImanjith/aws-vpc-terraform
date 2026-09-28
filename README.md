@@ -456,7 +456,7 @@ git checkout -b feature/network-update
 
 Modify the required Terraform configuration.
 
-### 3. Format, Validate & Scan Locally
+### 3. Format, Validate & Scan Locally                      
 
 ```bash
 terraform fmt -recursive
