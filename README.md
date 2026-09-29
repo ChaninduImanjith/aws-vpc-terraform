@@ -774,7 +774,6 @@ Potential improvements for production environments include:
 - Network ACL customization
 - AWS Transit Gateway integration
 - Automated Terraform documentation
-- Automated semantic versioning
 - Infrastructure testing
 - Cost estimation during Pull Requests
 - Automated security reporting
