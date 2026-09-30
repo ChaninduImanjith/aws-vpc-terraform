@@ -775,7 +775,6 @@ Potential improvements for production environments include:
 - AWS Transit Gateway integration
 - Automated Terraform documentation
 - Infrastructure testing
-- Cost estimation during Pull Requests
 - Automated security reporting
 
 ---
